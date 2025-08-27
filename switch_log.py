@@ -2,6 +2,7 @@
 
 import json, socket, time, os, pathlib
 from datetime import datetime, timezone, timedelta
+from jsonl_to_csv import JsonlToCsvConverter
 
 LISTEN_ADDR, LISTEN_PORT = '0.0.0.0', 514
 LOG_DIR = pathlib.Path(r'D:\Prgrms\switch-logs\logs\hpe'); LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -14,6 +15,8 @@ sock.bind((LISTEN_ADDR, LISTEN_PORT))
 sock.settimeout(1.0)  # let the loop wake up so Ctrl+C is handled promptly
 print(f'Listening on UDP/{LISTEN_PORT} ...')
 
+# Create a converter that overwrites the CSV on each update
+converter = JsonlToCsvConverter(overwrite=True)
 try:
     while True:
         try:
@@ -33,8 +36,13 @@ try:
         }
         printable = f"{evt_readable['ts']}: {evt_readable['raw']}"
         print(printable)
-        with open(path_for_today(), 'a', encoding='utf-8') as f:
+
+        log_path = path_for_today()
+        with open(log_path, 'a', encoding='utf-8') as f:
             f.write(json.dumps(evt, ensure_ascii=False) + '\n')
+
+        # Update the CSV to reflect the latest JSONL content
+        converter.convert_file(log_path, log_path.with_suffix('.csv'))
 except KeyboardInterrupt:
     print('\nStopping (Ctrl+C)...')
 finally:

@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Shebang for CLI: lets Unix run this script directly with python3 from PATH;
+# ignored on import; optional on Windows (py can use it).
+
 """
 JSONL to CSV Converter (Library + CLI)
 
