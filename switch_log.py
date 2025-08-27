@@ -3,24 +3,32 @@
 import json, socket, time, os, pathlib
 from datetime import datetime, timezone, timedelta
 
-LISTEN_ADDR, LISTEN_PORT = "0.0.0.0", 514
-LOG_DIR = pathlib.Path(r"D:\Prgrms\switch_logs"); LOG_DIR.mkdir(parents=True, exist_ok=True)
+LISTEN_ADDR, LISTEN_PORT = '0.0.0.0', 514
+LOG_DIR = pathlib.Path(r'D:\Prgrms\switch_logs'); LOG_DIR.mkdir(parents=True, exist_ok=True)
 TZ = timezone(timedelta(hours=5))
 def path_for_today():
-    return LOG_DIR / (datetime.now(TZ).strftime("%Y-%m-%d") + ".jsonl")
+    return LOG_DIR / (datetime.now(TZ).strftime('%Y-%m-%d') + '.jsonl')
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind((LISTEN_ADDR, LISTEN_PORT))
-print(f"Listening on UDP/{LISTEN_PORT} ...")
+print(f'Listening on UDP/{LISTEN_PORT} ...')
 
 while True:
     data, (src_ip, src_port) = sock.recvfrom(16384)
     evt = {
-        "ts": datetime.now(TZ).isoformat(),
-        "src_ip": src_ip,
-        "raw": data.decode(errors="replace")
+        'ts': datetime.now(TZ).isoformat(),
+        'src_ip': src_ip,
+        'raw': data.decode(errors='replace')
         # optional: parse severity/facility/app from raw here if you like
     }
+    '''
+    cool, right?
+    printable = '{}: {}'.format(evt['ts'], evt['raw'])
+    printable = '{ts}: {raw}'.format(ts=evt['ts'], raw=evt['raw'])
+    printable = '{ts}: {raw}'.format(**evt)
+    '''
+    printable = f"{evt['ts']}: {evt['raw']}"
+    print(printable)
     print(evt)
-    with open(path_for_today(), "a", encoding="utf-8") as f:
-        f.write(json.dumps(evt, ensure_ascii=False) + "\n")
+    with open(path_for_today(), 'a', encoding='utf-8') as f:
+        f.write(json.dumps(evt, ensure_ascii=False) + '\n')
