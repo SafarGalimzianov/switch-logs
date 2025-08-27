@@ -11,24 +11,28 @@ def path_for_today():
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind((LISTEN_ADDR, LISTEN_PORT))
+sock.settimeout(1.0)  # let the loop wake up so Ctrl+C is handled promptly
 print(f'Listening on UDP/{LISTEN_PORT} ...')
 
-while True:
-    data, (src_ip, src_port) = sock.recvfrom(16384)
-    evt = {
-        'ts': datetime.now(TZ).isoformat(),
-        'src_ip': src_ip,
-        'raw': data.decode(errors='replace')
-        # optional: parse severity/facility/app from raw here if you like
-    }
-    '''
-    cool, right?
-    printable = '{}: {}'.format(evt['ts'], evt['raw'])
-    printable = '{ts}: {raw}'.format(ts=evt['ts'], raw=evt['raw'])
-    printable = '{ts}: {raw}'.format(**evt)
-    '''
-    printable = f"{evt['ts']}: {evt['raw']}"
-    print(printable)
-    print(evt)
-    with open(path_for_today(), 'a', encoding='utf-8') as f:
-        f.write(json.dumps(evt, ensure_ascii=False) + '\n')
+try:
+    while True:
+        try:
+            data, (src_ip, src_port) = sock.recvfrom(16384)
+        except socket.timeout:
+            continue  # check for Ctrl+C again
+
+        evt = {
+            'ts': datetime.now(TZ).isoformat(),
+            'src_ip': src_ip,
+            'raw': data.decode(errors='replace')
+        }
+        printable = f"{evt['ts']}: {evt['raw']}"
+        print(printable)
+        print(evt)
+        with open(path_for_today(), 'a', encoding='utf-8') as f:
+            f.write(json.dumps(evt, ensure_ascii=False) + '\n')
+except KeyboardInterrupt:
+    print('\nStopping (Ctrl+C)...')
+finally:
+    sock.close()
+    print('Socket closed.')
